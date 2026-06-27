@@ -1,4 +1,5 @@
 # videostream-infra
+> App: [videostream-app](https://github.com/Mohammed-Hassan-123/videostream-app)
 
 IaC for deploying [VideoStream](https://github.com/Mohammed-Hassan-123/videostream-app) on a self-hosted k3s cluster. Provisions three VMs on Proxmox via Terraform, configures k3s with Ansible, and deploys the app to Kubernetes with ingress-nginx, MetalLB, and cert-manager.
 
