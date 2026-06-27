@@ -1,0 +1,8 @@
+terraform/terraform.tfvars
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl
+k8s/secret.yml
+*.log
+.DS_Store

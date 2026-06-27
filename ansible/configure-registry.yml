@@ -1,0 +1,68 @@
+---
+- name: Fetch CA cert from k3s-master to control node
+  hosts: k3s_master
+  become: yes
+  tasks:
+    - name: Fetch ca.crt to master VM
+      fetch:
+        src: /home/k3smaster/ca/ca.crt
+        dest: /tmp/homelab-ca.crt
+        flat: yes
+
+- name: Configure private registry and CA trust on all k3s nodes
+  hosts: k3s_master:k3s_workers
+  become: yes
+  tasks:
+    - name: Create /etc/rancher/k3s directory
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: '0755'
+
+    - name: Deploy registries.yaml
+      copy:
+        dest: /etc/rancher/k3s/registries.yaml
+        content: |
+          mirrors:
+            "192.168.100.11:5000":
+              endpoint:
+                - "http://192.168.100.11:5000"
+        mode: '0644'
+
+    - name: Install ca-certificates package
+      apt:
+        name: ca-certificates
+        state: present
+        update_cache: yes
+
+    - name: Copy homelab CA cert to trust store
+      copy:
+        src: /tmp/homelab-ca.crt
+        dest: /usr/local/share/ca-certificates/homelab-ca.crt
+        mode: '0644'
+
+    - name: Update CA certificates
+      command: update-ca-certificates
+
+    - name: Restart containerd to pick up new CA
+      service:
+        name: containerd
+        state: restarted
+
+- name: Restart k3s server on master
+  hosts: k3s_master
+  become: yes
+  tasks:
+    - name: Restart k3s service
+      service:
+        name: k3s
+        state: restarted
+
+- name: Restart k3s agent on workers
+  hosts: k3s_workers
+  become: yes
+  tasks:
+    - name: Restart k3s-agent service
+      service:
+        name: k3s-agent
+        state: restarted

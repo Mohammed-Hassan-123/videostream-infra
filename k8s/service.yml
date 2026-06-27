@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: videostream
+  namespace: default
+spec:
+  selector:
+    app: videostream
+  ports:
+  - port: 80
+    targetPort: 3000
+  type: ClusterIP

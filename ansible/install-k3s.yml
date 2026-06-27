@@ -1,0 +1,45 @@
+---
+- name: Install k3s server on master
+  hosts: k3s_master
+  become: yes
+  tasks:
+    - name: Download and install k3s server
+      shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server" sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for k3s to be ready
+      wait_for:
+        port: 6443
+        host: 192.168.100.35
+        delay: 10
+        timeout: 60
+
+    - name: Read node token
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_raw
+
+    - name: Set token fact
+      set_fact:
+        k3s_token: "{{ k3s_token_raw.content | b64decode | trim }}"
+
+- name: Install k3s agent on workers
+  hosts: k3s_workers
+  become: yes
+  tasks:
+    - name: Download and install k3s agent
+      shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent" \
+          K3S_URL="https://192.168.100.35:6443" \
+          K3S_TOKEN="{{ hostvars['k3smaster']['k3s_token'] }}" sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for k3s agent to start
+      wait_for:
+        port: 10250
+        host: "{{ ansible_host }}"
+        delay: 10
+        timeout: 60
